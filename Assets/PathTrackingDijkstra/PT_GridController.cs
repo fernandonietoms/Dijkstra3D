@@ -27,7 +27,8 @@ namespace PathTracking
         int height = 5;
         [SerializeField, Tooltip("Distance between each node.")] 
         float padding = 3f;
-        [SerializeField, Tooltip("Position from all the nodes will be generated")]
+        [SerializeField, Tooltip("Transform from all the nodes will be generated")]
+        Transform originTransform;
         Vector3 origin;
         [SerializeField, Tooltip("Gameobject that will save all the generated nodes.")]
         Transform parentTransform;
@@ -64,9 +65,9 @@ namespace PathTracking
                     for (int column = 0; column < height; column++)
                     {
                         Vector3 nodePosition = new Vector3(
-                            (row * padding) + gameObject.transform.position.x,
-                            (column * padding) + gameObject.transform.position.y, 
-                            (rowDepth * padding) + gameObject.transform.position.z);
+                            (row * padding) + origin.x,
+                            (column * padding) + origin.y, 
+                            (rowDepth * padding) + origin.z);
                         Transform node = Instantiate(nodePrefab, nodePosition, Quaternion.identity);
                         node.name = "Node [" + rowDepth + ", " + row + ", " + column + "]";
                         node.parent = parentTransform;
@@ -92,6 +93,7 @@ namespace PathTracking
                         PT_GridNode gridNode;
                         if (grid[rowDepth, row, column].TryGetComponent(out gridNode))
                         {
+                            // Set neighbours only if they have a node there
                             if (rowDepth - 1 >= 0)    gridNode.GN_AddNeighbourNode(grid[rowDepth - 1, row, column]); // Left
                             if (rowDepth + 1 < depth) gridNode.GN_AddNeighbourNode(grid[rowDepth + 1, row, column]); // Right
                             if (row - 1 >= 0)         gridNode.GN_AddNeighbourNode(grid[rowDepth, row - 1, column]); // Front
@@ -165,6 +167,24 @@ namespace PathTracking
 
             // Find the path and return the nodess
             return dijkstraAlgorithmScript.DA_FindShortestPath(originNode.transform, targetNode.transform, nodesList);
+        }
+
+        /// <summary>
+        /// GridController. Change the bounds of the BoxCollider from each node in the grid
+        /// </summary>
+        /// <param name="x">X Size Value</param>
+        /// <param name="y">Y Size Value</param>
+        /// <param name="z">Z Size  Value</param>
+        public void GC_SetNodesBounds(float x, float y, float z)
+        {
+            foreach (Transform node in parentTransform)
+            {
+                PT_GridNode nodeScript;
+                if (node.TryGetComponent(out nodeScript))
+                {
+                    nodeScript.GN_SetNodeColliderDimension(x, y, z);
+                }
+            }
         }
         #endregion
     }

@@ -32,7 +32,6 @@ namespace PathTracking
             GN_ResetNode();
         }
 
-
         #region Collisions
         private void OnCollisionEnter(Collision collision)
         {
@@ -98,6 +97,21 @@ namespace PathTracking
         public void GN_AddNeighbourNode(Transform node)
         {
             this.neighbourNode.Add(node);
+        }
+
+        /// <summary>
+        /// GridNode. Change the bounds of the BoxCollider
+        /// </summary>
+        /// <param name="x">X Size Value</param>
+        /// <param name="y">Y Size Value</param>
+        /// <param name="z">Z Size  Value</param>
+        public void GN_SetNodeColliderDimension(float x, float y, float z)
+        {
+            BoxCollider boxCollider;
+            if (this.TryGetComponent(out boxCollider))
+            {
+                boxCollider.size = new Vector3(x, y, z);
+            }
         }
         #endregion
         #region Get Data

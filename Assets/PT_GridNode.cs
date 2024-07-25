@@ -31,6 +31,27 @@ namespace PathTracking
         {
             GN_ResetNode();
         }
+
+
+        #region Collisions
+        private void OnCollisionEnter(Collision collision)
+        {
+            // Any overlapped node by an obstacke will be disabled
+            if (collision.gameObject.tag.Contains("Obstacle"))
+            {
+                GN_SetWalkable(false);
+            }
+        }
+
+        private void OnCollisionExit(Collision collision)
+        {
+            // Enable the node if it is reachable again
+            if (collision.gameObject.tag.Contains("Obstacle"))
+            {
+                GN_SetWalkable(true);
+            }
+        }
+        #endregion
         #endregion
         #region Set Data
         /// <summary>
@@ -67,6 +88,7 @@ namespace PathTracking
         public void GN_SetWalkable(bool value)
         {
             this.isWalkable = value;
+            this.GetComponent<MeshRenderer>().enabled = value;
         }
 
         /// <summary>

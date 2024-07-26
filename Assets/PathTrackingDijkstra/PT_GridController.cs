@@ -172,17 +172,17 @@ namespace PathTracking
         /// <summary>
         /// GridController. Change the bounds of the BoxCollider from each node in the grid
         /// </summary>
-        /// <param name="x">X Size Value</param>
-        /// <param name="y">Y Size Value</param>
-        /// <param name="z">Z Size  Value</param>
-        public void GC_SetNodesBounds(float x, float y, float z)
+        /// <param name="size">Bounds size (As Vector3) to be set</param>
+        /// <param name="scale">Scale of the GameObject to have as reference for scaling the bounds of the nodes.</param>
+        public void GC_SetNodesBounds(Vector3 size, Vector3 scale)
         {
             foreach (Transform node in parentTransform)
             {
                 PT_GridNode nodeScript;
                 if (node.TryGetComponent(out nodeScript))
                 {
-                    nodeScript.GN_SetNodeColliderDimension(x, y, z);
+                    // The size is multiplied by the scale so the node can recognize the real bound size based on the node scale
+                    nodeScript.GN_SetNodeColliderDimension(size.x * scale.x, size.y * scale.y, size.z * scale.z);
                 }
             }
         }

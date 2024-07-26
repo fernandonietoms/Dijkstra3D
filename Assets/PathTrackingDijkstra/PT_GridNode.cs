@@ -110,7 +110,12 @@ namespace PathTracking
             BoxCollider boxCollider;
             if (this.TryGetComponent(out boxCollider))
             {
-                boxCollider.size = new Vector3(x, y, z);
+                // The size is divided by the node scale to get the real bound size of the wanted object
+                boxCollider.size = new Vector3(
+                    x / this.transform.localScale.x, 
+                    y / this.transform.localScale.y, 
+                    z / this.transform.localScale.z
+                  );
             }
         }
         #endregion

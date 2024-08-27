@@ -47,10 +47,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 96e53a97faf9e0d43948e98d4ace6e1a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  weight: 2.147484e+9
+  weight: 0
   parentNode: {fileID: 0}
   neighbourNode: []
   isWalkable: 1
+  isActiveOnlyInsideArea: 1
+  transformCollider: {fileID: 65773648181758616}
 --- !u!65 &65773648181758616
 BoxCollider:
   m_ObjectHideFlags: 0

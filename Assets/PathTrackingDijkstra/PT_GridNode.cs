@@ -16,20 +16,49 @@ namespace PathTracking
     {
         #region Variables
         [SerializeField]
-        float weight = int.MaxValue;
+        float weight = 0;
         [SerializeField]
         Transform parentNode = null;
         [SerializeField]
         List<Transform> neighbourNode;
         [SerializeField]
         bool isWalkable = true;
+        [SerializeField]
+        bool isActiveOnlyInsideArea = false;
+        [SerializeField]
+        BoxCollider transformCollider;
+        List<Collider> collidersInCollision = new List<Collider>();
         #endregion
 
         #region MonoBehaviour Methods
-        // Use this for initialization
-        void Start()
+        private void Awake()
         {
-            GN_ResetNode();
+            // Disable node if it will only be avaliable inside an Area collider (If it collides with one, it will be enabled)
+            if (isActiveOnlyInsideArea)
+            {
+                GN_SetWalkable(false);
+            }
+        }
+
+        private void Update()
+        {
+            if (isActiveOnlyInsideArea)
+            {
+                bool showNode = false;
+                foreach (Collider collider in collidersInCollision)
+                {
+                    if (collider.bounds.Contains(transformCollider.bounds.max) &&
+                        collider.bounds.Contains(transformCollider.bounds.min))
+                    {
+                        showNode = true;
+                    }
+                }
+
+                if (showNode)
+                    GN_SetWalkable(true);
+                else
+                    GN_SetWalkable(false);
+            }
         }
 
         #region Collisions
@@ -40,6 +69,12 @@ namespace PathTracking
             {
                 GN_SetWalkable(false);
             }
+
+            // Enable the node if the collided object is an Area and will be active only inside it
+            if (isActiveOnlyInsideArea && collision.gameObject.tag.Contains("Area"))
+            {
+                collidersInCollision.Add(collision.collider);
+            }
         }
 
         private void OnCollisionExit(Collision collision)
@@ -48,6 +83,12 @@ namespace PathTracking
             if (collision.gameObject.tag.Contains("Obstacle"))
             {
                 GN_SetWalkable(true);
+            }
+
+            // Disable the node if the collided object is an Area and will be active only inside it
+            if (isActiveOnlyInsideArea && collision.gameObject.tag.Contains("Area"))
+            {
+                collidersInCollision.Remove(collision.collider);
             }
         }
         #endregion
@@ -112,8 +153,8 @@ namespace PathTracking
             {
                 // The size is divided by the node scale to get the real bound size of the wanted object
                 boxCollider.size = new Vector3(
-                    x / this.transform.localScale.x, 
-                    y / this.transform.localScale.y, 
+                    x / this.transform.localScale.x,
+                    y / this.transform.localScale.y,
                     z / this.transform.localScale.z
                   );
             }

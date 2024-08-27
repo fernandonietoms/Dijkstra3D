@@ -19,6 +19,8 @@ namespace PathTracking
     public class PT_GridController : MonoBehaviour
     {
         #region Variables
+        [SerializeField, Tooltip("If true, only the nodes inside a collider tagged as 'Area' will be enabled")]
+        bool enableNodesOnlyInArea = false;
         [SerializeField, Tooltip("Number of rows in the grid."), Range(1, 25)] 
         int depth = 5;
         [SerializeField, Tooltip("Number of columns in the grid."), Range(1, 25)] 
@@ -46,9 +48,8 @@ namespace PathTracking
         void Start()
         {
             GC_GenerateGrid();
-            GC_SetNodesNeighbours();
+            GC_SetNodesData();
         }
-
         #endregion
         #region Grid Generation
         /// <summary>
@@ -56,8 +57,15 @@ namespace PathTracking
         /// </summary>
         private void GC_GenerateGrid()
         {
+            // Set origin transform to be in the center of the grid by moving the origin reference
+            origin.x = originTransform.position.x - (((width - 1) * padding) / 2);
+            origin.y = originTransform.position.y - (((height - 1) * padding) / 2);
+            origin.z = originTransform.position.z - (((depth - 1) * padding) / 2);
+
+            // Set grid size
             grid = new Transform[depth, width, height];
 
+            // Iterate the grid to create the nodes
             for (int rowDepth = 0; rowDepth < depth; rowDepth++)
             {
                 for (int row = 0; row < width; row++)
@@ -76,30 +84,37 @@ namespace PathTracking
                 }
             }
 
-
         }
 
         /// <summary>
-        /// GridController. Get the neighbours of each grip node and set their references.
+        /// GridController. Set the neighbours and weigth of each node.
         /// </summary>
-        private void GC_SetNodesNeighbours()
+        private void GC_SetNodesData()
         {
+            // Iterate the grid...
             for (int rowDepth = 0; rowDepth < depth; rowDepth++)
             {
                 for (int row = 0; row < width; row++)
                 {
                     for (int column = 0; column < height; column++)
                     {
+                        // Get the node script...
                         PT_GridNode gridNode;
                         if (grid[rowDepth, row, column].TryGetComponent(out gridNode))
                         {
-                            // Set neighbours only if they have a node there
+                            // Set neighbours only if they have a node there (Based on the grid)
                             if (rowDepth - 1 >= 0)    gridNode.GN_AddNeighbourNode(grid[rowDepth - 1, row, column]); // Left
                             if (rowDepth + 1 < depth) gridNode.GN_AddNeighbourNode(grid[rowDepth + 1, row, column]); // Right
                             if (row - 1 >= 0)         gridNode.GN_AddNeighbourNode(grid[rowDepth, row - 1, column]); // Front
                             if (row + 1 < width)      gridNode.GN_AddNeighbourNode(grid[rowDepth, row + 1, column]); // Back
                             if (column - 1 >= 0)      gridNode.GN_AddNeighbourNode(grid[rowDepth, row, column - 1]); // Top
                             if (column + 1 < height)  gridNode.GN_AddNeighbourNode(grid[rowDepth, row, column + 1]); // Bottom
+
+                            // Set weight of the node (The closer to the robot , the less weight it will have)
+                            gridNode.GN_SetWeight(
+                                (height - 1) - column + // The upper to the workspace-top it is, the less weight it will have
+                                Vector3.Distance(gridNode.transform.position, originTransform.position) // The closer to the robot , the less weight it will have
+                                );
                         }
                     }
                 }
@@ -142,27 +157,35 @@ namespace PathTracking
             // Iterate the parent Transform that has all the nodes generated...
             foreach (Transform node in parentTransform)
             {
-                // Get the closest node for each position...
-                // If they haven't been initialized, save the first node as their reference
-                if (originNode == parentTransform.gameObject) { originNode = node.gameObject; originNodeDistance = Vector3.Distance(originNode.transform.position, origin); }
-                if (targetNode == parentTransform.gameObject) { targetNode = node.gameObject; targetNodeDistance = Vector3.Distance(targetNode.transform.position, target); }
-                // Check if the node is closer to the last saved node as the closest node to the Origin position
-                if (Vector3.Distance(node.position, origin) < originNodeDistance)
+                // If the node is walkable...
+                PT_GridNode gridNodeScript;
+                if (node.TryGetComponent(out gridNodeScript))
                 {
-                    // If it is closer, change the saved node to this
-                    originNode = node.gameObject;
-                    originNodeDistance = Vector3.Distance(node.position, origin);
-                }
-                // Check if the node is closer to the last saved node as the closest node to the Origin position
-                if (Vector3.Distance(node.position, target) < targetNodeDistance)
-                {
-                    // If it is closer, change the saved node to this
-                    targetNode = node.gameObject;
-                    targetNodeDistance = Vector3.Distance(node.position, target);
-                }
+                    if (gridNodeScript.GN_IsWalkable())
+                    {
+                        // Get the closest node for each position...
+                        // If they haven't been initialized, save the first node as their reference
+                        if (originNode == parentTransform.gameObject) { originNode = node.gameObject; originNodeDistance = Vector3.Distance(originNode.transform.position, origin); }
+                        if (targetNode == parentTransform.gameObject) { targetNode = node.gameObject; targetNodeDistance = Vector3.Distance(targetNode.transform.position, target); }
+                        // Check if the node is closer to the last saved node as the closest node to the Origin position
+                        if (Vector3.Distance(node.position, origin) < originNodeDistance)
+                        {
+                            // If it is closer, change the saved node to this
+                            originNode = node.gameObject;
+                            originNodeDistance = Vector3.Distance(node.position, origin);
+                        }
+                        // Check if the node is closer to the last saved node as the closest node to the Origin position
+                        if (Vector3.Distance(node.position, target) < targetNodeDistance)
+                        {
+                            // If it is closer, change the saved node to this
+                            targetNode = node.gameObject;
+                            targetNodeDistance = Vector3.Distance(node.position, target);
+                        }
 
-                // Add the node to the list
-                nodesList.Add(node);
+                        // Add the node to the list
+                        nodesList.Add(node);
+                    }
+                }
             }
 
             // Find the path and return the nodess
